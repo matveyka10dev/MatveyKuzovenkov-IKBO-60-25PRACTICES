@@ -1,0 +1,4 @@
+# Этап 2: стартовый скрипт, завершающий эмулятор командой exit.
+ls -a
+exit 7
+ls "this line is never executed"
