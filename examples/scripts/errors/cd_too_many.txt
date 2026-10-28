@@ -1,0 +1,4 @@
+# Ошибка: лишние аргументы cd
+cd /home
+cd /home /tmp
+ls never

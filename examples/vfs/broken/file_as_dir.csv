@@ -1,0 +1,3 @@
+path,type,encoding,content
+/etc/hostname,file,text,host
+/etc/hostname/x,file,text,abc

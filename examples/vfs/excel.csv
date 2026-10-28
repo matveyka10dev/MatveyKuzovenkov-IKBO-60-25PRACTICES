@@ -1,0 +1,4 @@
+﻿path;type;encoding;content
+/readme.txt;file;text;Файл сохранён в Excel
+/data/table.txt;file;text;"a;b;c"
+/data/empty;dir;;

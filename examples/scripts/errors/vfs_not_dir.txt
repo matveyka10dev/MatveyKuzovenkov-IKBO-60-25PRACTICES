@@ -1,0 +1,4 @@
+# Ошибка: файл используется как каталог
+vfs-info /etc/hostname
+vfs-info /etc/hostname/x
+ls never

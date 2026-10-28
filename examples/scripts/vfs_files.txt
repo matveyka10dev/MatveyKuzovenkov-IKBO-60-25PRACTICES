@@ -1,0 +1,7 @@
+# VFS из нескольких файлов в корне.
+vfs-info
+vfs-info /readme.txt
+vfs-info /notes.txt
+vfs-info "/My Documents.txt"
+vfs-info /logo.png
+vfs-info /empty.txt

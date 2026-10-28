@@ -1,0 +1,7 @@
+# VFS с вложенностью более 3 уровней.
+vfs-info
+vfs-info /home
+vfs-info /home/user/docs
+vfs-info /home/user/docs/projects/emulator
+vfs-info /home/user/docs/projects/emulator/main.py
+vfs-info /home/user/docs/projects/emulator/data.bin

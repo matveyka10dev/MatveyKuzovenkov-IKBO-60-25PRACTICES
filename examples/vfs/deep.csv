@@ -1,0 +1,13 @@
+path,type,encoding,content
+/bin/ls,file,base64,f0VMRgIBAQ==
+/etc/hostname,file,text,vfs-host
+/etc/os-release,file,text,"NAME=""EmuOS""
+VERSION=""1.0"""
+/home/user/readme.txt,file,text,Hello from the user home
+/home/user/docs/report.txt,file,text,Quarterly report
+/home/user/docs/projects/emulator/main.py,file,text,"print(""hello"")"
+/home/user/docs/projects/emulator/data.bin,file,base64,AAECAwQF
+/home/user/pictures/cat.png,file,base64,iVBORw0KGgo=
+/home/guest,dir,,
+/tmp,dir,,
+/var/log/syslog,file,text,boot ok

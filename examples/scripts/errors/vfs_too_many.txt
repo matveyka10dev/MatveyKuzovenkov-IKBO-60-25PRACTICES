@@ -1,0 +1,4 @@
+# Ошибка: лишние аргументы vfs-info
+vfs-info /
+vfs-info /etc /tmp
+ls never

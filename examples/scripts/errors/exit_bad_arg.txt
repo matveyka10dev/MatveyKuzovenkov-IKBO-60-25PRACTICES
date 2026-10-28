@@ -1,0 +1,4 @@
+# Ошибка: нечисловой аргумент exit
+ls
+exit abc
+ls never

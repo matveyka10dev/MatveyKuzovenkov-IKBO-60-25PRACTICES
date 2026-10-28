@@ -11,7 +11,8 @@ from shell_emu.commands import (
     ShellExit,
 )
 from shell_emu.lexer import ParseError, tokenize
-from shell_emu.osinfo import build_prompt, current_dir_display
+from shell_emu.osinfo import build_prompt
+from shell_emu.vfs import ROOT_PATH, Vfs
 
 SHELL_NAME = "emulator"
 
@@ -19,11 +20,12 @@ SHELL_NAME = "emulator"
 class Shell:
     """Эмулятор командной оболочки UNIX-подобной ОС."""
 
-    def __init__(self, out=None, err=None):
+    def __init__(self, out=None, err=None, vfs=None):
         """Создать эмулятор.
 
         :param out: поток для обычного вывода (по умолчанию stdout).
         :param err: поток для сообщений об ошибках (по умолчанию stderr).
+        :param vfs: виртуальная файловая система (по умолчанию пустая).
         """
         self.out = out if out is not None else sys.stdout
         self.err = err if err is not None else sys.stderr
@@ -31,6 +33,8 @@ class Shell:
         self.last_status = STATUS_OK
         self.running = True
         self.exit_code = STATUS_OK
+        self.vfs = vfs if vfs is not None else Vfs()
+        self.cwd = ROOT_PATH
 
     def write(self, text):
         """Вывести строку в поток обычного вывода.
@@ -52,9 +56,12 @@ class Shell:
     def prompt(self):
         """Вернуть строку приглашения к вводу.
 
-        :return: приглашение вида ``username@hostname:~$``.
+        Имя пользователя и компьютера берутся из реальной ОС,
+        путь - текущий каталог в VFS.
+
+        :return: приглашение вида ``username@hostname:/$``.
         """
-        return build_prompt(current_dir_display())
+        return build_prompt(self.cwd)
 
     def execute(self, line):
         """Разобрать и выполнить одну строку ввода.
