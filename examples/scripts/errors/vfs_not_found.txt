@@ -1,0 +1,4 @@
+# Ошибка: путь не существует в VFS
+vfs-info /etc
+vfs-info /etc/passwd
+ls never

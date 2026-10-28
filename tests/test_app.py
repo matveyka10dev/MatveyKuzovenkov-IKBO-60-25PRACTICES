@@ -1,4 +1,4 @@
-"""Тесты точки входа: параметры, отладочный вывод, стартовый скрипт."""
+"""Тесты точки входа: параметры, отладочный вывод, VFS, скрипт."""
 
 import contextlib
 import io
@@ -8,6 +8,11 @@ import unittest
 import unittest.mock
 
 from shell_emu.app import main
+
+EXAMPLES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
+                        "examples")
+MINIMAL_VFS = os.path.join(EXAMPLES, "vfs", "minimal.csv")
+DEEP_VFS = os.path.join(EXAMPLES, "vfs", "deep.csv")
 
 
 def run_main(args, stdin_text=""):
@@ -53,8 +58,10 @@ class MainTest(unittest.TestCase):
         """Заданные параметры попадают в отладочный вывод."""
         with tempfile.TemporaryDirectory() as tmp:
             script = write_script(tmp, "ls\n")
-            _, out, _ = run_main(["--vfs", "fs.csv", "--script", script])
-        self.assertIn("vfs_path    = fs.csv", out)
+            code, out, _ = run_main(
+                ["--vfs", MINIMAL_VFS, "--script", script])
+        self.assertEqual(code, 0)
+        self.assertIn("vfs_path    = " + MINIMAL_VFS, out)
         self.assertIn("script_path = " + script, out)
 
     def test_script_then_interactive(self):
@@ -90,6 +97,46 @@ class MainTest(unittest.TestCase):
         code, _, err = run_main(["--script", "/no/such/script.txt"])
         self.assertEqual(code, 1)
         self.assertIn("cannot read script", err)
+
+
+class VfsStartupTest(unittest.TestCase):
+    """Проверка загрузки VFS при запуске."""
+
+    def test_without_vfs_param(self):
+        """Без --vfs используется пустая VFS."""
+        code, out, _ = run_main([])
+        self.assertEqual(code, 0)
+        self.assertIn("using empty VFS", out)
+
+    def test_vfs_loaded(self):
+        """VFS загружается, выводится число каталогов и файлов."""
+        code, out, _ = run_main(["--vfs", DEEP_VFS])
+        self.assertEqual(code, 0)
+        self.assertIn("12 directories, 9 files", out)
+
+    def test_broken_vfs_stops_emulator(self):
+        """Ошибка загрузки VFS - код 1, скрипт не выполняется."""
+        path = os.path.join(EXAMPLES, "vfs", "broken", "bad_type.csv")
+        with tempfile.TemporaryDirectory() as tmp:
+            script = write_script(tmp, "ls never\n")
+            code, out, err = run_main(["--vfs", path, "--script", script])
+        self.assertEqual(code, 1)
+        self.assertIn("unknown type", err)
+        self.assertNotIn("never", out)
+
+    def test_missing_vfs_file(self):
+        """Отсутствующий файл VFS - код 1."""
+        code, _, err = run_main(["--vfs", "/no/such/vfs.csv"])
+        self.assertEqual(code, 1)
+        self.assertIn("cannot open", err)
+
+    def test_script_with_vfs(self):
+        """Стартовый скрипт работает с загруженной VFS."""
+        with tempfile.TemporaryDirectory() as tmp:
+            script = write_script(tmp, "vfs-info /bin/ls\nexit 0\n")
+            code, out, _ = run_main(["--vfs", DEEP_VFS, "--script", script])
+        self.assertEqual(code, 0)
+        self.assertIn("size:    7 bytes", out)
 
 
 if __name__ == "__main__":

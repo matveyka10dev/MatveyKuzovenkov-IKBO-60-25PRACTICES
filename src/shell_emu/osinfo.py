@@ -1,13 +1,11 @@
 """Получение сведений о реальной ОС для приглашения к вводу."""
 
 import getpass
-import os
 import platform
 import socket
 
 DEFAULT_USER = "user"
 DEFAULT_HOST = "localhost"
-HOME_SIGN = "~"
 
 
 def get_username():
@@ -30,33 +28,10 @@ def get_hostname():
     return name.split(".")[0] or DEFAULT_HOST
 
 
-def shorten_home(path, home):
-    """Заменить домашний каталог в начале пути на ``~``.
-
-    :param path: абсолютный путь.
-    :param home: путь к домашнему каталогу.
-    :return: путь, в котором домашний каталог заменён на ``~``.
-    """
-    if path == home:
-        return HOME_SIGN
-    prefix = home.rstrip(os.sep) + os.sep
-    if home and path.startswith(prefix):
-        return HOME_SIGN + os.sep + path[len(prefix):]
-    return path
-
-
-def current_dir_display():
-    """Вернуть текущий каталог ОС в сокращённом виде (``~/...``).
-
-    :return: строка с текущим каталогом.
-    """
-    return shorten_home(os.getcwd(), os.path.expanduser(HOME_SIGN))
-
-
 def build_prompt(location):
-    """Сформировать приглашение вида ``username@hostname:~$``.
+    """Сформировать приглашение вида ``username@hostname:/path$``.
 
-    :param location: текущее расположение для отображения.
+    :param location: текущий каталог для отображения.
     :return: строка приглашения с завершающим пробелом.
     """
     return "{}@{}:{}$ ".format(get_username(), get_hostname(), location)

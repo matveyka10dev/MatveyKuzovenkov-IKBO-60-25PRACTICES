@@ -1,0 +1,4 @@
+# Ошибка: незакрытая кавычка
+ls
+cd "unclosed
+ls never

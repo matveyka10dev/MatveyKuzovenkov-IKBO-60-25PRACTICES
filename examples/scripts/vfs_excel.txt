@@ -1,0 +1,5 @@
+# VFS из Excel: BOM, концы строк CRLF, разделитель ;
+vfs-info
+vfs-info /readme.txt
+vfs-info /data/table.txt
+vfs-info /data/empty

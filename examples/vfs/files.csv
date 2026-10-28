@@ -1,0 +1,7 @@
+path,type,encoding,content
+/readme.txt,file,text,Welcome to the virtual file system!
+/notes.txt,file,,"First line
+Second line"
+/My Documents.txt,file,text,"Name with spaces, content with a comma"
+/logo.png,file,base64,iVBORw0KGgo=
+/empty.txt,file,text,

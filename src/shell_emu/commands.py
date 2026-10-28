@@ -6,6 +6,8 @@
 Об ошибках команда сообщает исключением :class:`CommandError`.
 """
 
+from shell_emu.vfs import VfsError, normalize_path
+
 STATUS_OK = 0
 STATUS_ERROR = 1
 STATUS_USAGE = 2
@@ -15,6 +17,7 @@ EXIT_CODE_MODULO = 256
 LS_SHORT_OPTIONS = "la"
 CD_MAX_ARGS = 1
 EXIT_MAX_ARGS = 1
+VFS_INFO_MAX_ARGS = 1
 
 
 class CommandError(Exception):
@@ -130,8 +133,70 @@ def cmd_exit(shell, args):
     raise ShellExit(code % EXIT_CODE_MODULO)
 
 
+def vfs_summary(vfs):
+    """Сформировать сводку о загруженной VFS.
+
+    :param vfs: экземпляр Vfs.
+    :return: список строк вида ``ключ: значение``.
+    """
+    stats = vfs.stats()
+    return [
+        "source:      {}".format(vfs.source),
+        "directories: {}".format(stats["dirs"]),
+        "files:       {}".format(stats["files"]),
+        "total size:  {} bytes".format(stats["size"]),
+        "max depth:   {}".format(stats["depth"]),
+    ]
+
+
+def node_info(shell, path):
+    """Сформировать сведения об элементе VFS.
+
+    :param shell: экземпляр эмулятора.
+    :param path: абсолютный или относительный путь в VFS.
+    :return: список строк вида ``ключ: значение``.
+    :raises CommandError: если элемент не найден.
+    """
+    try:
+        node = shell.vfs.lookup(path, shell.cwd)
+    except VfsError as exc:
+        raise CommandError(str(exc)) from None
+    lines = ["path:    {}".format(normalize_path(path, shell.cwd))]
+    if node.is_dir:
+        lines.append("type:    directory")
+        lines.append("entries: {}".format(len(node.children)))
+    else:
+        lines.append("type:    file")
+        lines.append("size:    {} bytes".format(node.size))
+    return lines
+
+
+def cmd_vfs_info(shell, args):
+    """Служебная команда vfs-info [путь]: сведения о VFS.
+
+    Без аргумента выводит сводку о загруженной VFS (источник, число
+    каталогов и файлов, общий размер, глубину), с аргументом -
+    тип и размер указанного элемента.
+
+    :param shell: экземпляр эмулятора.
+    :param args: аргументы команды.
+    :return: код завершения.
+    :raises CommandError: при лишних аргументах или неверном пути.
+    """
+    if len(args) > VFS_INFO_MAX_ARGS:
+        raise CommandError("too many arguments")
+    if args:
+        lines = node_info(shell, args[0])
+    else:
+        lines = vfs_summary(shell.vfs)
+    for line in lines:
+        shell.write(line)
+    return STATUS_OK
+
+
 BUILTIN_COMMANDS = {
     "ls": cmd_ls,
     "cd": cmd_cd,
     "exit": cmd_exit,
+    "vfs-info": cmd_vfs_info,
 }
