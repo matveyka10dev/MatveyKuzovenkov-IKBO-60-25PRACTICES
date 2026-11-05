@@ -3,8 +3,6 @@
 import argparse
 
 PROG_NAME = "depviz"
-NOT_SET = "<not set>"
-KEY_VALUE_SEPARATOR = " = "
 UNSET_VALUES = (None, False)
 
 
@@ -27,21 +25,6 @@ class Config:
         self.test_mode = test_mode
         self.ascii_tree = ascii_tree
         self.name_filter = name_filter
-
-    def items(self):
-        """Вернуть параметры в виде пар (ключ, значение).
-
-        Ключи совпадают с именами опций командной строки.
-
-        :return: список пар в порядке вывода.
-        """
-        return [
-            ("package", self.package),
-            ("repo", self.repo),
-            ("test-mode", self.test_mode),
-            ("ascii-tree", self.ascii_tree),
-            ("filter", self.name_filter),
-        ]
 
 
 class StoreOnce(argparse.Action):
@@ -132,28 +115,3 @@ def parse_args(argv=None):
     namespace = build_arg_parser().parse_args(argv)
     return Config(namespace.package, namespace.repo, namespace.test_mode,
                   namespace.ascii_tree, namespace.name_filter)
-
-
-def format_value(value):
-    """Представить значение параметра в виде строки.
-
-    :param value: значение параметра.
-    :return: ``true``/``false`` для флагов, ``<not set>`` для None.
-    """
-    if value is None:
-        return NOT_SET
-    if isinstance(value, bool):
-        return str(value).lower()
-    return value
-
-
-def format_config(config):
-    """Сформировать вывод всех параметров в формате ключ-значение.
-
-    :param config: экземпляр Config.
-    :return: список строк вида ``ключ = значение``.
-    """
-    pairs = config.items()
-    width = max(len(key) for key, _ in pairs)
-    return [key.ljust(width) + KEY_VALUE_SEPARATOR + format_value(value)
-            for key, value in pairs]

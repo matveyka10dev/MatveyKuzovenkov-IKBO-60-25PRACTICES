@@ -1,10 +1,10 @@
-"""Тесты разбора опций командной строки и вывода параметров."""
+"""Тесты разбора опций командной строки."""
 
 import contextlib
 import io
 import unittest
 
-from depviz.config import NOT_SET, Config, format_config, parse_args
+from depviz.config import parse_args
 
 STATUS_USAGE = 2
 
@@ -96,27 +96,6 @@ class ParseArgsErrorTest(unittest.TestCase):
                 code, err = parse_error(["-p", "A", extra])
                 self.assertEqual(code, STATUS_USAGE)
                 self.assertIn("unrecognized arguments", err)
-
-
-class FormatConfigTest(unittest.TestCase):
-    """Проверка вывода параметров в формате ключ-значение."""
-
-    def test_all_keys_in_order(self):
-        """Выводятся все пять параметров, ключи выровнены."""
-        lines = format_config(Config("A", "r.txt", True, False, "B"))
-        self.assertEqual(lines, [
-            "package    = A",
-            "repo       = r.txt",
-            "test-mode  = true",
-            "ascii-tree = false",
-            "filter     = B",
-        ])
-
-    def test_not_set(self):
-        """Незаданные параметры отмечаются <not set>."""
-        lines = format_config(Config("A"))
-        self.assertEqual(lines[1], "repo       = " + NOT_SET)
-        self.assertEqual(lines[4], "filter     = " + NOT_SET)
 
 
 if __name__ == "__main__":
