@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+  <parent>
+    <groupId>org.example</groupId>
+    <artifactId>missing-parent</artifactId>
+    <version>1.0</version>
+  </parent>
+  <artifactId>orphan</artifactId>
+</project>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+  <parent>
+    <groupId>org.example</groupId>
+    <artifactId>cycle-b</artifactId>
+    <version>1.0</version>
+  </parent>
+  <artifactId>cycle-a</artifactId>
+</project>
