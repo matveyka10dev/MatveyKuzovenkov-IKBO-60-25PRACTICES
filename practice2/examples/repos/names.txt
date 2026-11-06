@@ -1,0 +1,7 @@
+# Имена из нескольких букв - для фильтрации по подстроке.
+APP: WEB LOG TEST
+WEB: CORE JSON
+LOG: CORE
+TEST: APP CORE
+JSON: CORE
+CORE:

@@ -14,6 +14,13 @@ POM заданного пакета (и его родителей), из них 
 только `urllib`, для разбора XML - `xml.etree.ElementTree` из
 стандартной библиотеки Python.
 
+**Этап 3. Основные операции.** Строится граф зависимостей с учётом
+транзитивности - алгоритмом DFS без рекурсии. Пакеты, имя которых
+содержит заданную подстроку, не учитываются, циклические зависимости
+находятся и выводятся. Вместо репозитория Maven можно указать файл
+тестового репозитория, где пакеты называются заглавными латинскими
+буквами.
+
 Язык реализации: Python 3.8+ (только стандартная библиотека).
 
 ## Структура репозитория
@@ -21,15 +28,19 @@ POM заданного пакета (и его родителей), из них 
 ```
 src/depviz/         исходный код
   __main__.py       запуск через python -m depviz
-  app.py            точка входа: опции, проверка, вывод зависимостей
+  app.py            точка входа: опции, проверка, построение графа
   config.py         опции командной строки
   validation.py     проверка значений параметров
   maven.py          координаты, зависимости, адреса файлов Maven
   pom.py            разбор POM и maven-metadata.xml
   repository.py     загрузка файлов по HTTP(S)
   resolver.py       получение прямых зависимостей пакета
+  graph.py          граф зависимостей: DFS без рекурсии, циклы, фильтр
+  sources.py        источники данных: репозиторий Maven, тестовый
+  testrepo.py       чтение файла тестового репозитория
+  report.py         текстовый вывод графа
 tests/              модульные тесты (unittest, без сети)
-examples/repos/     пример файла тестового репозитория
+examples/repos/     файлы тестовых репозиториев (broken/ - ошибочные)
 examples/maven-repo/ локальный репозиторий Maven для демонстрации
 scripts/            скрипты ОС для демонстрации (.sh и .bat)
 run.sh, run.bat     скрипты запуска
@@ -64,15 +75,14 @@ Makefile            цели run и test
   В тестовом режиме опция обязательна и задаёт путь к существующему
   файлу описания графа.
 * **`--test-mode`** - флаг без значения: пакеты и зависимости берутся
-  из файла тестового репозитория, а не из сети. Чтение файла будет
-  реализовано на этапе 3, пока выводится сообщение
-  `test mode: dependencies from a test repository file are not
-  supported yet`.
+  из файла тестового репозитория (`--repo`), а не из сети.
 * **`--ascii-tree`** - флаг без значения: зависимости будут выведены
   ASCII-деревом (этап 5, пока не влияет на вывод).
 * **`--filter`** - пакеты, имя которых содержит эту подстроку, не
-  учитываются при анализе (этап 3, пока не влияет на вывод). Подстрока не может быть пустой, не может
-  содержать пробелы и не может входить в имя анализируемого пакета
+  учитываются при анализе: они не попадают в граф, и их зависимости не
+  обходятся. Для Maven с подстрокой сравнивается `groupId:artifactId`,
+  в тестовом режиме - имя пакета. Подстрока не может быть пустой, не
+  может содержать пробелы и не может входить в имя анализируемого пакета
   (без версии), иначе анализировать было бы нечего.
 
 ### Получение прямых зависимостей
@@ -108,24 +118,80 @@ Makefile            цели run и test
 не являются зависимостями пакета и не учитываются. Скачанные файлы
 кэшируются в памяти, повторно не загружаются.
 
-Выводятся все прямые зависимости с областью видимости (`compile`,
-`test`, `provided`, `runtime`, `system`) и отметкой `optional`.
-Код завершения 0:
+### Построение графа зависимостей
+
+Граф строится обходом в глубину (DFS) **без рекурсии**: вместо стека
+вызовов используется явный стек, каждый элемент которого - пара
+(пакет, итератор по его зависимостям). Поэтому глубина графа не
+ограничена пределом рекурсии Python (это проверяется тестом на
+цепочке из 2000 пакетов).
+
+Каждый пакет при обходе находится в одном из состояний: ещё не
+встречался, «в обработке» (лежит в стеке) или «обработан». Зависимости
+пакета запрашиваются у источника один раз, при первом входе в пакет:
+
+* зависимость, которая ещё не встречалась, кладётся в стек;
+* зависимость «в обработке» означает **цикл**: путь от неё до вершины
+  стека и обратно запоминается, а повторный обход не выполняется,
+  поэтому циклы не приводят к зацикливанию;
+* зависимость, которая уже обработана, - общий пакет нескольких путей
+  («ромб»), ребро добавляется, обход не повторяется;
+* зависимость, имя которой содержит подстроку `--filter`, в граф не
+  добавляется и не обходится, она попадает в список отфильтрованных.
+
+Если не удалось получить сам анализируемый пакет, выводится ошибка
+(код 1). Если не удалось получить зависимости другого пакета (нет POM,
+диапазон версий `[1.0,2.0)`, нет пакета в тестовом репозитории), пакет
+помечается `(not resolved)`, а обход продолжается.
+
+Для репозитория Maven учитываются те же зависимости, что и в
+`mvn dependency:tree`: у анализируемого пакета - все прямые
+зависимости, у остальных пакетов - только транзитивные, то есть
+`compile` и `runtime` без `optional`. Узел графа - точные координаты
+`groupId:artifactId:version`.
+
+Вывод: список смежности в порядке обхода DFS, циклы, отфильтрованные
+пакеты (если задан `--filter`) и неразрешённые пакеты. Код
+завершения 0:
 
 ```
-Direct dependencies of junit:junit:4.13.2 (2):
-  org.hamcrest:hamcrest-core:1.3 [compile]
-  org.hamcrest:hamcrest-library:1.3 [test]
+Dependency graph of APP (packages: 5, dependencies: 7):
+  APP -> WEB, TEST
+  WEB -> CORE, JSON
+  CORE
+  JSON -> CORE
+  TEST -> APP, CORE
+Cycles (1):
+  APP -> TEST -> APP
+Filtered out by 'LO' (1):
+  LOG
 ```
 
-Если зависимостей нет, выводится `(no dependencies)`. Если версию не
-удалось определить, вместо неё выводится `<unknown version>`.
+### Тестовый репозиторий
+
+Файл описания графа - текст в UTF-8 (с BOM или без), по одному
+пакету на строку: имя пакета, двоеточие и зависимости через пробел.
+Пакеты называются заглавными латинскими буквами (`A`, `B`, `APP`).
+Пустые строки и текст после `#` пропускаются.
+
+```
+# A зависит от B и C
+A: B C
+B: D
+C: D E
+D:
+E:
+```
+
+Пакет, который указан только как зависимость, считается отсутствующим
+в репозитории (как пакет без POM в Maven) и помечается
+`(not resolved)`.
 
 ### Обработка ошибок
 
 При любой ошибке сообщение выводится в поток ошибок в формате
 `depviz: error: <сообщение>`. Ошибки в опциях - код завершения 2,
-ошибки получения зависимостей - код 1.
+ошибки получения данных об анализируемом пакете - код 1.
 
 Синтаксические ошибки обрабатывает `argparse` (перед сообщением
 выводится строка `usage`):
@@ -179,6 +245,17 @@ Direct dependencies of junit:junit:4.13.2 (2):
 | неизвестный сервер               | `<url>: cannot connect: [Errno -2] Name or service not known` |
 | другой ответ HTTP                | `<url>: HTTP 500 Internal Server Error`                   |
 
+Ошибки тестового репозитория (код 1):
+
+| Ситуация                         | Сообщение                                                 |
+|----------------------------------|-----------------------------------------------------------|
+| строка без двоеточия             | `f.txt:2: expected 'PACKAGE: DEPENDENCIES', got 'B C'`    |
+| имя не из заглавных букв         | `f.txt:2: invalid package name 'c': expected capital Latin letters` |
+| пакет описан дважды              | `f.txt:3: duplicate package 'A'`                          |
+| повтор в списке зависимостей     | `f.txt:1: duplicate dependency 'B' of A`                  |
+| файл не в UTF-8                  | `'f.txt' is not a UTF-8 text file`                        |
+| анализируемого пакета нет        | `package Q not found in test repository`                  |
+
 ## Сборка и запуск
 
 Сборка не требуется, нужен только Python 3.8+.
@@ -212,13 +289,23 @@ make test                                         # через make
 | `scripts/test_filter_errors`  | ошибки `--filter`                               |
 | `scripts/test_bad_usage`      | справка, запуск без опций, неизвестные опции    |
 
-Получение прямых зависимостей (этап 2):
+Получение зависимостей из репозитория Maven (этап 2; начиная с
+этапа 3 выводится граф):
 
 | Скрипт                        | Что проверяет                                   |
 |-------------------------------|-------------------------------------------------|
 | `scripts/test_deps_local`     | пакеты из `examples/maven-repo` (без интернета): версия из метаданных, родитель, свойства, BOM, scope, optional |
 | `scripts/test_deps_errors`    | ошибки: нет пакета, нет версий, неверный XML, не POM, нет родителя, цикл родителей, недоступный сервер |
 | `scripts/test_deps_central`   | реальные пакеты из Maven Central (нужен интернет) |
+
+Граф зависимостей (этап 3):
+
+| Скрипт                        | Что проверяет                                   |
+|-------------------------------|-------------------------------------------------|
+| `scripts/test_graph_test_repo` | тестовые репозитории: ромб, цикл, цикл из одного пакета, несколько циклов, глубина 26, имена из нескольких букв, отсутствующие пакеты, нет корня |
+| `scripts/test_graph_filter`   | фильтрация: удаление поддерева, разрыв цикла, несколько пакетов |
+| `scripts/test_graph_broken`   | некорректные файлы тестового репозитория        |
+| `scripts/test_graph_maven`    | граф из `examples/maven-repo`: транзитивные зависимости, scope, цикл, фильтр, неразрешённые пакеты |
 
 Скрипты `test_deps_local` и `test_deps_errors` на время работы
 запускают встроенный HTTP-сервер Python
@@ -271,55 +358,92 @@ for %f in (scripts\*.bat) do call %f                 :: Windows (cmd)
 | `org.example:orphan:1.0`             | отсутствующий родительский POM                     |
 | `org.example:cycle-a:1.0`            | циклическая цепочка родителей                      |
 | `org.example:no-versions`            | метаданные без версий                              |
+| `org.example:demo-core:1.1.0`        | `optional`, `test` и `provided` не транзитивны, `runtime` транзитивна |
+| `org.example:cycle-x:1.0`            | цикл зависимостей cycle-x -> cycle-y -> cycle-z -> cycle-x |
+| `org.example:missing-dep:1.0`        | транзитивные зависимости без POM и с диапазоном версий |
 
-`examples/repos/simple.txt` - пример файла тестового репозитория для
-режима `--test-mode`. Сейчас проверяется только, что файл существует и
-доступен для чтения; содержимое (строки вида `A: B C` - пакет и его
-прямые зависимости) будет читаться начиная с этапа 3.
+Для полноты графа `demo-app` в репозитории есть упрощённые POM
+транзитивных зависимостей (`slf4j-api`, `guava` и её зависимости,
+`jackson-*`, `commons-lang3`, `jakarta.servlet-api`). Они содержат
+только прямые зависимости этих пакетов, остальные элементы убраны.
+
+Тестовые репозитории в `examples/repos/`:
+
+| Файл              | Граф                                                  |
+|-------------------|-------------------------------------------------------|
+| `simple.txt`      | без циклов, общая зависимость D (ромб)                |
+| `cycle.txt`       | цикл A -> B -> C -> A                                 |
+| `self_cycle.txt`  | пакет зависит сам от себя                             |
+| `cycles.txt`      | два цикла, второй достижим из первого                 |
+| `deep.txt`        | цепочка из 26 уровней A -> ... -> Z                   |
+| `names.txt`       | имена из нескольких букв, цикл APP -> TEST -> APP     |
+| `missing.txt`     | зависимости, не описанные в репозитории               |
+| `broken/*.txt`    | ошибки формата: имя, двоеточие, повторы, пустой файл, не UTF-8 |
 
 ## Примеры использования
 
-Пакет из Maven Central (по умолчанию):
+Тестовый репозиторий с циклами:
+
+```
+$ ./run.sh --test-mode --repo examples/repos/cycles.txt --package A
+Dependency graph of A (packages: 6, dependencies: 7):
+  A -> B
+  B -> C, D
+  C -> A
+  D -> E
+  E -> D, F
+  F
+Cycles (2):
+  A -> B -> C -> A
+  D -> E -> D
+```
+
+Фильтр разрывает цикл:
+
+```
+$ ./run.sh -t -r examples/repos/names.txt -p APP -f T
+Dependency graph of APP (packages: 5, dependencies: 6):
+  APP -> WEB, LOG
+  WEB -> CORE, JSON
+  CORE
+  JSON -> CORE
+  LOG -> CORE
+Cycles: none
+Filtered out by 'T' (1):
+  TEST
+```
+
+Пакет из репозитория Maven (Maven Central по умолчанию):
 
 ```
 $ ./run.sh --package junit:junit:4.13.2
-Direct dependencies of junit:junit:4.13.2 (2):
-  org.hamcrest:hamcrest-core:1.3 [compile]
-  org.hamcrest:hamcrest-library:1.3 [test]
+Dependency graph of junit:junit:4.13.2 (packages: 3, dependencies: 3):
+  junit:junit:4.13.2 -> org.hamcrest:hamcrest-core:1.3, org.hamcrest:hamcrest-library:1.3
+  org.hamcrest:hamcrest-core:1.3
+  org.hamcrest:hamcrest-library:1.3 -> org.hamcrest:hamcrest-core:1.3
+Cycles: none
 ```
 
-Локальный репозиторий, версия из метаданных, родитель и BOM:
+Неразрешённые пакеты не прерывают построение графа:
 
 ```
-$ ./run.sh --package org.example:demo-app --repo http://127.0.0.1:8765
-Direct dependencies of org.example:demo-app:1.1.0 (7):
-  org.slf4j:slf4j-api:2.0.9 [compile]
-  com.google.guava:guava:33.0.0-jre [compile]
-  com.fasterxml.jackson.core:jackson-databind:2.16.1 [compile]
-  org.example:demo-core:1.1.0 [compile]
-  jakarta.servlet:jakarta.servlet-api:6.0.0 [provided]
-  org.apache.commons:commons-lang3:3.14.0 [compile, optional]
-  junit:junit:4.13.2 [test]
+$ ./run.sh --package org.example:missing-dep:1.0 --repo http://127.0.0.1:8765
+Dependency graph of org.example:missing-dep:1.0 (packages: 4, dependencies: 3):
+  org.example:missing-dep:1.0 -> org.example:ghost:1.0, org.example:no-deps:1.0, org.example:ranged:[1.0,2.0)
+  org.example:ghost:1.0 (not resolved)
+  org.example:no-deps:1.0
+  org.example:ranged:[1.0,2.0) (not resolved)
+Cycles: none
+Not resolved (2):
+  org.example:ghost:1.0: package org.example:ghost:1.0 not found in repository (...)
+  org.example:ranged:[1.0,2.0): version '[1.0,2.0)' cannot be resolved
 ```
 
-Здесь `slf4j-api` получает версию из свойства, переопределённого в
-`demo-app`, `guava` - из `dependencyManagement` родителя (версия
-`31.0-jre` из BOM проигрывает явной записи), `jackson-databind` - из
-импортированного BOM, `demo-core` - из `${project.version}`, а
-`junit` унаследован от родителя вместе с `scope=test`.
-
-Ошибки:
+Ошибка в файле тестового репозитория:
 
 ```
-$ ./run.sh --package org.example:cycle-a:1.0 --repo http://127.0.0.1:8765
-depviz: error: cyclic parent reference: org.example:cycle-a:1.0 -> org.example:cycle-b:1.0 -> org.example:cycle-a:1.0
+$ ./run.sh -t -r examples/repos/broken/no_colon.txt -p A
+depviz: error: examples/repos/broken/no_colon.txt:2: expected 'PACKAGE: DEPENDENCIES', got 'B C'
 $ echo $?
 1
-```
-
-```
-$ ./run.sh --package A --test-mode --repo https://repo1.maven.org/maven2
-depviz: error: --repo: 'https://repo1.maven.org/maven2': test mode requires a file path, not a URL
-$ echo $?
-2
 ```
