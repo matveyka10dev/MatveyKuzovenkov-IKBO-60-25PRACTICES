@@ -8,7 +8,7 @@ import urllib.error
 import urllib.request
 
 TIMEOUT_SECONDS = 20
-USER_AGENT = "depviz/0.2"
+USER_AGENT = "depviz/0.3"
 HTTP_NOT_FOUND = 404
 
 

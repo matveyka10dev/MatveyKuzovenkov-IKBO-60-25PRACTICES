@@ -19,6 +19,22 @@ TYPE_JAR = "jar"
 TYPE_POM = "pom"
 UNKNOWN_VERSION = "<unknown version>"
 OPTIONAL_MARK = "optional"
+TRANSITIVE_SCOPES = (SCOPE_COMPILE, "runtime")
+PROPERTY_START = "${"
+RANGE_STARTS = ("[", "(")
+
+
+def is_concrete_version(version):
+    """Проверить, задана ли версия точно.
+
+    Версии с неподставленными свойствами ``${...}`` и диапазоны версий
+    ``[1.0,2.0)`` не позволяют найти файл POM.
+
+    :param version: строка версии или None.
+    :return: True, если по версии можно загрузить POM.
+    """
+    return (bool(version) and PROPERTY_START not in version
+            and not version.startswith(RANGE_STARTS))
 
 
 class Coordinate:
@@ -93,6 +109,16 @@ class Dependency:
     def is_import(self):
         """True для импорта BOM (``scope=import``, ``type=pom``)."""
         return self.scope == SCOPE_IMPORT and self.dep_type == TYPE_POM
+
+    @property
+    def is_transitive(self):
+        """True, если зависимость передаётся дальше по графу.
+
+        Как в Maven: транзитивными являются зависимости с областью
+        видимости ``compile`` и ``runtime``, кроме необязательных.
+        """
+        return ((self.scope or SCOPE_COMPILE) in TRANSITIVE_SCOPES
+                and not self.optional)
 
     def interpolate(self, resolve):
         """Подставить значения свойств ``${...}`` во все поля.
