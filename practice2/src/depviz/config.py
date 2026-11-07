@@ -10,7 +10,7 @@ class Config:
     """Набор параметров, настраиваемых пользователем."""
 
     def __init__(self, package=None, repo=None, test_mode=False,
-                 ascii_tree=False, name_filter=None):
+                 ascii_tree=False, name_filter=None, load_order=False):
         """Создать конфигурацию.
 
         :param package: имя анализируемого пакета.
@@ -19,12 +19,14 @@ class Config:
         :param test_mode: True - режим работы с тестовым репозиторием.
         :param ascii_tree: True - вывод зависимостей ASCII-деревом.
         :param name_filter: подстрока для фильтрации пакетов или None.
+        :param load_order: True - вывод порядка загрузки зависимостей.
         """
         self.package = package
         self.repo = repo
         self.test_mode = test_mode
         self.ascii_tree = ascii_tree
         self.name_filter = name_filter
+        self.load_order = load_order
 
 
 class StoreOnce(argparse.Action):
@@ -100,6 +102,9 @@ def build_arg_parser():
         "--filter", "-f", dest="name_filter", action=StoreOnce,
         metavar="SUBSTRING",
         help="не учитывать пакеты, имя которых содержит подстроку")
+    parser.add_argument(
+        "--load-order", "-l", dest="load_order", action=FlagOnce,
+        help="вывод порядка загрузки зависимостей")
     return parser
 
 
@@ -114,4 +119,5 @@ def parse_args(argv=None):
     """
     namespace = build_arg_parser().parse_args(argv)
     return Config(namespace.package, namespace.repo, namespace.test_mode,
-                  namespace.ascii_tree, namespace.name_filter)
+                  namespace.ascii_tree, namespace.name_filter,
+                  namespace.load_order)
