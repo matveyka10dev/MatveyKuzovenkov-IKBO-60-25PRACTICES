@@ -4,7 +4,7 @@ import sys
 import unittest
 
 from depviz.graph import SourceError, build_graph
-from depviz.report import format_graph
+from depviz.report import format_graph, format_load_order
 
 
 class DictSource:
@@ -132,6 +132,33 @@ class BuildGraphTest(unittest.TestCase):
         """Отсутствие корневого пакета - ошибка."""
         with self.assertRaisesRegex(SourceError, "no A"):
             graph_of({})
+
+
+class LoadOrderTest(unittest.TestCase):
+    """Проверка порядка загрузки зависимостей."""
+
+    def test_dependencies_first(self):
+        """Каждый пакет идёт после всех своих зависимостей."""
+        graph = graph_of({"A": ["B", "C"], "B": ["D"], "C": ["D", "E"],
+                          "D": [], "E": []})
+        self.assertEqual(graph.load_order, ["D", "B", "E", "C", "A"])
+
+    def test_cycle(self):
+        """В цикле каждый пакет загружается один раз."""
+        graph = graph_of({"A": ["B"], "B": ["C"], "C": ["A", "D"],
+                          "D": []})
+        self.assertEqual(graph.load_order, ["D", "C", "B", "A"])
+
+    def test_format(self):
+        """Вывод: нумерованный список, неразрешённые пакеты, циклы."""
+        graph = graph_of({"A": ["X", "A"]})
+        self.assertEqual(format_load_order(graph), [
+            "Load order of A (packages: 2):",
+            "  1. X (not resolved)",
+            "  2. A",
+            "Cycles (1):",
+            "  A -> A",
+        ])
 
 
 class FormatGraphTest(unittest.TestCase):

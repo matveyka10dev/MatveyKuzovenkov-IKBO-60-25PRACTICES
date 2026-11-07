@@ -35,6 +35,25 @@ def format_section(title, items):
             + [INDENT + item for item in items])
 
 
+def format_load_order(graph):
+    """Сформировать вывод порядка загрузки зависимостей.
+
+    Каждый пакет выводится после всех своих зависимостей. Внутри цикла
+    строгого порядка нет, поэтому найденные циклы выводятся отдельно.
+
+    :param graph: экземпляр DependencyGraph.
+    :return: список строк для вывода.
+    """
+    lines = ["Load order of {} (packages: {}):".format(
+        graph.root, len(graph.load_order))]
+    for number, node in enumerate(graph.load_order, start=1):
+        mark = NOT_RESOLVED_MARK if node in graph.errors else ""
+        lines.append("{}{}. {}{}".format(INDENT, number, node, mark))
+    lines.extend(format_section(
+        "Cycles", [ARROW.join(cycle) for cycle in graph.cycles]))
+    return lines
+
+
 def format_graph(graph, name_filter=None):
     """Сформировать вывод графа зависимостей.
 

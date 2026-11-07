@@ -69,6 +69,14 @@ class MainTest(unittest.TestCase):
         self.assertIn("Filtered out by 'LO' (1):\n  LOG\n", out)
         self.assertNotIn("APP -> WEB, LOG", out)
 
+    def test_load_order(self):
+        """Режим вывода порядка загрузки."""
+        code, out, _ = run_main(["-t", "-r", example_repo("simple.txt"),
+                                 "-p", "A", "--load-order"])
+        self.assertEqual(code, STATUS_OK)
+        self.assertTrue(out.startswith("Load order of A (packages: 5):\n"
+                                       "  1. D\n  2. B\n"))
+
     def test_maven_graph(self):
         """Граф пакета из репозитория Maven."""
         code, out, _ = run_main(["-p", "junit:junit", "-r", REPO_URL])

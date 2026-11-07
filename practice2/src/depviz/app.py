@@ -4,7 +4,7 @@ import sys
 
 from depviz.config import PROG_NAME, parse_args
 from depviz.graph import SourceError, build_graph
-from depviz.report import format_graph
+from depviz.report import format_graph, format_load_order
 from depviz.resolver import Resolver
 from depviz.sources import MavenSource, TestRepoSource
 from depviz.testrepo import TestRepoError, load_test_repo
@@ -37,7 +37,7 @@ def make_source(config):
 
 
 def show_graph(config):
-    """Построить и вывести граф зависимостей пакета.
+    """Построить граф и вывести его или порядок загрузки пакетов.
 
     :param config: проверенная конфигурация.
     :return: код завершения.
@@ -48,7 +48,11 @@ def show_graph(config):
     except (TestRepoError, SourceError) as exc:
         print_error(exc)
         return STATUS_ERROR
-    for line in format_graph(graph, config.name_filter):
+    if config.load_order:
+        lines = format_load_order(graph)
+    else:
+        lines = format_graph(graph, config.name_filter)
+    for line in lines:
         print(line)
     return STATUS_OK
 

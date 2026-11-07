@@ -16,6 +16,10 @@
 статусом DONE - обычное повторное использование (ромб), обход тоже не
 повторяется.
 
+Пакеты в порядке перехода в состояние DONE (обратный порядок обхода,
+post-order) образуют порядок загрузки: каждый пакет идёт после всех
+своих зависимостей, кроме зависимостей, замыкающих цикл.
+
 Источник данных (репозиторий Maven или тестовый репозиторий) должен
 иметь методы ``root(name)``, ``dependencies(name)`` и
 ``package_name(name)``; об ошибках он сообщает исключением SourceError.
@@ -42,6 +46,7 @@ class DependencyGraph:
         self.cycles = []
         self.filtered = []
         self.errors = {}
+        self.load_order = []
 
     @property
     def nodes(self):
@@ -84,6 +89,7 @@ class GraphBuilder:
             child = next(children, None)
             if child is None:
                 self.state[node] = DONE
+                self.graph.load_order.append(node)
                 stack.pop()
             elif child not in self.state:
                 stack.append(self._enter(child))
