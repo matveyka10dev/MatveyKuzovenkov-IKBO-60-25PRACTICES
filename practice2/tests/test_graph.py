@@ -1,10 +1,9 @@
-"""Тесты построения графа зависимостей и его вывода."""
+"""Тесты построения графа зависимостей."""
 
 import sys
 import unittest
 
 from depviz.graph import SourceError, build_graph
-from depviz.report import format_graph, format_load_order
 
 
 class DictSource:
@@ -132,60 +131,6 @@ class BuildGraphTest(unittest.TestCase):
         """Отсутствие корневого пакета - ошибка."""
         with self.assertRaisesRegex(SourceError, "no A"):
             graph_of({})
-
-
-class LoadOrderTest(unittest.TestCase):
-    """Проверка порядка загрузки зависимостей."""
-
-    def test_dependencies_first(self):
-        """Каждый пакет идёт после всех своих зависимостей."""
-        graph = graph_of({"A": ["B", "C"], "B": ["D"], "C": ["D", "E"],
-                          "D": [], "E": []})
-        self.assertEqual(graph.load_order, ["D", "B", "E", "C", "A"])
-
-    def test_cycle(self):
-        """В цикле каждый пакет загружается один раз."""
-        graph = graph_of({"A": ["B"], "B": ["C"], "C": ["A", "D"],
-                          "D": []})
-        self.assertEqual(graph.load_order, ["D", "C", "B", "A"])
-
-    def test_format(self):
-        """Вывод: нумерованный список, неразрешённые пакеты, циклы."""
-        graph = graph_of({"A": ["X", "A"]})
-        self.assertEqual(format_load_order(graph), [
-            "Load order of A (packages: 2):",
-            "  1. X (not resolved)",
-            "  2. A",
-            "Cycles (1):",
-            "  A -> A",
-        ])
-
-
-class FormatGraphTest(unittest.TestCase):
-    """Проверка вывода графа."""
-
-    def test_full_report(self):
-        """Список смежности, циклы, фильтр и ошибки."""
-        graph = graph_of({"A": ["B", "X", "C"], "B": ["A"], "C": []},
-                         name_filter="C")
-        self.assertEqual(format_graph(graph, "C"), [
-            "Dependency graph of A (packages: 3, dependencies: 3):",
-            "  A -> B, X",
-            "  B -> A",
-            "  X (not resolved)",
-            "Cycles (1):",
-            "  A -> B -> A",
-            "Filtered out by 'C' (1):",
-            "  C",
-            "Not resolved (1):",
-            "  X: no X",
-        ])
-
-    def test_empty_sections(self):
-        """Без циклов и отфильтрованных пакетов выводится none."""
-        lines = format_graph(graph_of({"A": []}), "Z")
-        self.assertEqual(lines[1:], ["  A", "Cycles: none",
-                                     "Filtered out by 'Z': none"])
 
 
 if __name__ == "__main__":

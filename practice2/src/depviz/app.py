@@ -4,7 +4,8 @@ import sys
 
 from depviz.config import PROG_NAME, parse_args
 from depviz.graph import SourceError, build_graph
-from depviz.report import format_graph, format_load_order
+from depviz.image import ImageError, show_image
+from depviz.report import format_dot, format_tree
 from depviz.resolver import Resolver
 from depviz.sources import MavenSource, TestRepoSource
 from depviz.testrepo import TestRepoError, load_test_repo
@@ -37,7 +38,11 @@ def make_source(config):
 
 
 def show_graph(config):
-    """Построить граф и вывести его или порядок загрузки пакетов.
+    """Построить граф, вывести его текст и изображение.
+
+    На экран выводится описание графа на языке Graphviz, а с флагом
+    ``--ascii-tree`` - ASCII-дерево зависимостей. Затем изображение
+    графа открывается в программе просмотра.
 
     :param config: проверенная конфигурация.
     :return: код завершения.
@@ -48,12 +53,15 @@ def show_graph(config):
     except (TestRepoError, SourceError) as exc:
         print_error(exc)
         return STATUS_ERROR
-    if config.load_order:
-        lines = format_load_order(graph)
-    else:
-        lines = format_graph(graph, config.name_filter)
+    dot_lines = format_dot(graph)
+    lines = format_tree(graph) if config.ascii_tree else dot_lines
     for line in lines:
         print(line)
+    try:
+        show_image("\n".join(dot_lines) + "\n")
+    except ImageError as exc:
+        print_error(exc)
+        return STATUS_ERROR
     return STATUS_OK
 
 
@@ -61,8 +69,9 @@ def main(argv=None):
     """Запустить инструмент.
 
     Порядок работы: разбор опций командной строки, проверка значений,
-    построение и вывод графа зависимостей пакета. Ошибка в опциях -
-    код 2, ошибка получения данных о пакете - код 1.
+    построение графа зависимостей пакета, вывод его текста и
+    изображения. Ошибка в опциях - код 2, ошибка получения данных о
+    пакете или показа изображения - код 1.
 
     :param argv: опции командной строки (по умолчанию sys.argv[1:]).
     :return: код завершения процесса.

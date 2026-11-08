@@ -33,18 +33,16 @@ class ParseArgsTest(unittest.TestCase):
         self.assertFalse(config.test_mode)
         self.assertFalse(config.ascii_tree)
         self.assertIsNone(config.name_filter)
-        self.assertFalse(config.load_order)
 
     def test_all_options_long(self):
         """Все длинные опции, включая форму --opt=value."""
         config = parse_args([
             "--package=A", "--repo", "r.txt", "--test-mode",
-            "--ascii-tree", "--filter=B", "--load-order"])
+            "--ascii-tree", "--filter=B"])
         self.assertEqual((config.package, config.repo), ("A", "r.txt"))
         self.assertTrue(config.test_mode)
         self.assertTrue(config.ascii_tree)
         self.assertEqual(config.name_filter, "B")
-        self.assertTrue(config.load_order)
 
     def test_short_options_any_order(self):
         """Короткие опции в произвольном порядке, флаги слитно."""
