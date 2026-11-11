@@ -21,6 +21,14 @@ POM заданного пакета (и его родителей), из них 
 тестового репозитория, где пакеты называются заглавными латинскими
 буквами.
 
+**Этап 4. Дополнительные операции.** Режим вывода порядка загрузки
+зависимостей пакета и сравнение результата с Maven. По заданию режим
+нужен только на этапе 4, на этапе 5 он убран.
+
+**Этап 5. Визуализация.** Граф выводится на языке диаграмм Graphviz и
+в виде изображения, а по флагу `--ascii-tree` - в виде ASCII-дерева.
+Результаты сравниваются со штатными средствами Maven.
+
 Язык реализации: Python 3.8+ (только стандартная библиотека).
 
 ## Структура репозитория
@@ -38,10 +46,12 @@ src/depviz/         исходный код
   graph.py          граф зависимостей: DFS без рекурсии, циклы, фильтр
   sources.py        источники данных: репозиторий Maven, тестовый
   testrepo.py       чтение файла тестового репозитория
-  report.py         текстовый вывод графа
+  report.py         текст графа: Graphviz (DOT) и ASCII-дерево
+  image.py          изображение графа: Graphviz dot и просмотр
 tests/              модульные тесты (unittest, без сети)
 examples/repos/     файлы тестовых репозиториев (broken/ - ошибочные)
 examples/maven-repo/ локальный репозиторий Maven для демонстрации
+examples/compare/   pom.xml для сравнения с Maven
 scripts/            скрипты ОС для демонстрации (.sh и .bat)
 run.sh, run.bat     скрипты запуска
 Makefile            цели run и test
@@ -76,8 +86,8 @@ Makefile            цели run и test
   файлу описания графа.
 * **`--test-mode`** - флаг без значения: пакеты и зависимости берутся
   из файла тестового репозитория (`--repo`), а не из сети.
-* **`--ascii-tree`** - флаг без значения: зависимости будут выведены
-  ASCII-деревом (этап 5, пока не влияет на вывод).
+* **`--ascii-tree`** - флаг без значения: вместо описания на языке
+  Graphviz зависимости выводятся ASCII-деревом.
 * **`--filter`** - пакеты, имя которых содержит эту подстроку, не
   учитываются при анализе: они не попадают в граф, и их зависимости не
   обходятся. Для Maven с подстрокой сравнивается `groupId:artifactId`,
@@ -137,12 +147,12 @@ Makefile            цели run и test
 * зависимость, которая уже обработана, - общий пакет нескольких путей
   («ромб»), ребро добавляется, обход не повторяется;
 * зависимость, имя которой содержит подстроку `--filter`, в граф не
-  добавляется и не обходится, она попадает в список отфильтрованных.
+  добавляется и не обходится.
 
 Если не удалось получить сам анализируемый пакет, выводится ошибка
 (код 1). Если не удалось получить зависимости другого пакета (нет POM,
 диапазон версий `[1.0,2.0)`, нет пакета в тестовом репозитории), пакет
-помечается `(not resolved)`, а обход продолжается.
+помечается как неразрешённый, а обход продолжается.
 
 Для репозитория Maven учитываются те же зависимости, что и в
 `mvn dependency:tree`: у анализируемого пакета - все прямые
@@ -150,22 +160,142 @@ Makefile            цели run и test
 `compile` и `runtime` без `optional`. Узел графа - точные координаты
 `groupId:artifactId:version`.
 
-Вывод: список смежности в порядке обхода DFS, циклы, отфильтрованные
-пакеты (если задан `--filter`) и неразрешённые пакеты. Код
-завершения 0:
+### Визуализация
+
+После построения графа инструмент:
+
+1. Формирует описание графа на языке диаграмм **Graphviz** (DOT):
+   узел - пакет, ребро - зависимость. Анализируемый пакет выделяется
+   жирной рамкой, неразрешённые пакеты - пунктирной.
+2. Выводит на экран **изображение графа**: описание передаётся
+   программе `dot` из пакета [Graphviz](https://graphviz.org), она
+   создаёт временный файл PNG, который открывается программой
+   просмотра изображений, назначенной в системе (`os.startfile` в
+   Windows, `open` в macOS, `xdg-open` в Linux).
+3. Печатает текст: без флага `--ascii-tree` - описание на языке
+   Graphviz, с флагом - **ASCII-дерево** зависимостей.
+
+ASCII-дерево оформлено как вывод `mvn dependency:tree`. Поддерево
+каждого пакета выводится один раз, повторное появление пакета
+отмечается `(*)`, зависимость, замыкающая цикл, - `(cycle)`,
+неразрешённый пакет - `(not resolved)`.
+
+Примеры для трёх пакетов (скрипт `scripts/test_visualize` выводит
+эти же тексты и открывает изображения графов):
+
+**`A` из `examples/repos/simple.txt`** - граф без циклов с общей
+зависимостью D:
 
 ```
-Dependency graph of APP (packages: 5, dependencies: 7):
-  APP -> WEB, TEST
-  WEB -> CORE, JSON
-  CORE
-  JSON -> CORE
-  TEST -> APP, CORE
-Cycles (1):
-  APP -> TEST -> APP
-Filtered out by 'LO' (1):
-  LOG
+$ ./run.sh -t -r examples/repos/simple.txt -p A
+digraph dependencies {
+    rankdir=LR;
+    node [shape=box];
+    "A" [style=bold];
+    "B";
+    "D";
+    "C";
+    "E";
+    "A" -> "B";
+    "A" -> "C";
+    "B" -> "D";
+    "C" -> "D";
+    "C" -> "E";
+}
+$ ./run.sh -t -r examples/repos/simple.txt -p A --ascii-tree
+A
++- B
+|  \- D
+\- C
+   +- D (*)
+   \- E
 ```
+
+**`A` из `examples/repos/cycles.txt`** - два цикла:
+
+```
+$ ./run.sh -t -r examples/repos/cycles.txt -p A --ascii-tree
+A
+\- B
+   +- C
+   |  \- A (cycle)
+   \- D
+      \- E
+         +- D (cycle)
+         \- F
+```
+
+**`APP` из `examples/repos/names.txt`** - общая зависимость CORE и
+цикл APP -> TEST -> APP:
+
+```
+$ ./run.sh -t -r examples/repos/names.txt -p APP --ascii-tree
+APP
++- WEB
+|  +- CORE
+|  \- JSON
+|     \- CORE (*)
++- LOG
+|  \- CORE (*)
+\- TEST
+   +- APP (cycle)
+   \- CORE (*)
+```
+
+### Сравнение с Maven
+
+Штатные средства визуализации Maven - команда `mvn dependency:tree`
+(дерево в тексте) и она же с `-DoutputType=dot` (описание на языке
+Graphviz). Для сравнения в `examples/compare/pom.xml` описан проект
+с одной зависимостью `junit:junit:4.13.2`:
+
+```sh
+cd examples/compare
+mvn dependency:tree
+mvn dependency:tree -DoutputType=dot -DoutputFile=junit.dot
+```
+
+Результат Maven:
+
+```
+compare:compare:jar:1.0
+\- junit:junit:jar:4.13.2:compile
+   \- org.hamcrest:hamcrest-core:jar:1.3:compile
+
+digraph "compare:compare:jar:1.0" {
+    "compare:compare:jar:1.0" -> "junit:junit:jar:4.13.2:compile" ;
+    "junit:junit:jar:4.13.2:compile" -> "org.hamcrest:hamcrest-core:jar:1.3:compile" ;
+}
+```
+
+Результат инструмента:
+
+```
+$ ./run.sh --package junit:junit:4.13.2 --ascii-tree
+junit:junit:4.13.2
++- org.hamcrest:hamcrest-core:1.3
+\- org.hamcrest:hamcrest-library:1.3
+   \- org.hamcrest:hamcrest-core:1.3 (*)
+```
+
+Расхождения и их причины:
+
+1. **Корень.** Maven строит дерево проекта, в котором junit - одна из
+   зависимостей. Инструмент строит граф самого пакета junit.
+2. **Лишний `hamcrest-library`.** У junit это зависимость со
+   `scope=test`. Инструмент учитывает все прямые зависимости
+   анализируемого пакета, а Maven не передаёт `test`-зависимости
+   зависимостей проекту.
+3. **Повторы.** Maven выводит каждый пакет один раз и не показывает
+   повторные пути (только с `-Dverbose`). Инструмент показывает
+   повторы с отметкой `(*)`, а в Graphviz - как несколько рёбер в один
+   узел, поэтому изображение - граф, а не дерево.
+4. **Подписи.** Maven добавляет к координатам тип (`jar`) и область
+   видимости (`compile`), инструмент выводит `groupId:artifactId:version`.
+5. **Версии.** Maven оставляет одну версию каждого пакета (ближайшую к
+   корню, «nearest wins») и учитывает `exclusions`, а инструмент
+   считает разные версии разными пакетами. На больших графах из-за
+   этого число пакетов может отличаться.
 
 ### Тестовый репозиторий
 
@@ -184,8 +314,8 @@ E:
 ```
 
 Пакет, который указан только как зависимость, считается отсутствующим
-в репозитории (как пакет без POM в Maven) и помечается
-`(not resolved)`.
+в репозитории (как пакет без POM в Maven) и помечается как
+неразрешённый.
 
 ### Обработка ошибок
 
@@ -256,14 +386,25 @@ E:
 | файл не в UTF-8                  | `'f.txt' is not a UTF-8 text file`                        |
 | анализируемого пакета нет        | `package Q not found in test repository`                  |
 
+Ошибки показа изображения (код 1, текст графа к этому моменту уже
+выведен):
+
+| Ситуация                         | Сообщение                                                 |
+|----------------------------------|-----------------------------------------------------------|
+| Graphviz не установлен           | `Graphviz is not installed: 'dot' not found in PATH`      |
+| ошибка программы dot             | `dot failed: <сообщение dot>`                             |
+| не открылась программа просмотра | `cannot open image <файл>: <причина>`                     |
+
 ## Сборка и запуск
 
-Сборка не требуется, нужен только Python 3.8+.
+Сборка не требуется. Нужны Python 3.8+ и Graphviz для вывода
+изображения графа (https://graphviz.org/download/; в Windows при
+установке отметить добавление в `PATH`, в Linux - пакет `graphviz`).
 
 ```sh
-./run.sh --package org.junit:junit:4.13.2       # Linux / macOS
-run.bat --package org.junit:junit:4.13.2        # Windows
-make run ARGS="--package org.junit:junit"       # через make (без ARGS - справка)
+./run.sh --package junit:junit:4.13.2           # Linux / macOS
+run.bat --package junit:junit:4.13.2            # Windows
+make run ARGS="--package junit:junit"           # через make (без ARGS - справка)
 ```
 
 Запуск модульных тестов:
@@ -306,6 +447,15 @@ make test                                         # через make
 | `scripts/test_graph_filter`   | фильтрация: удаление поддерева, разрыв цикла, несколько пакетов |
 | `scripts/test_graph_broken`   | некорректные файлы тестового репозитория        |
 | `scripts/test_graph_maven`    | граф из `examples/maven-repo`: транзитивные зависимости, scope, цикл, фильтр, неразрешённые пакеты |
+
+Визуализация (этап 5):
+
+| Скрипт                        | Что проверяет                                   |
+|-------------------------------|-------------------------------------------------|
+| `scripts/test_visualize`      | три пакета: текст на языке Graphviz и изображение, затем ASCII-деревья |
+
+Начиная с этапа 5 каждый успешный запуск открывает изображение графа,
+поэтому скрипты открывают по одному окну просмотра на запуск.
 
 Скрипты `test_deps_local` и `test_deps_errors` на время работы
 запускают встроенный HTTP-сервер Python
@@ -382,61 +532,56 @@ for %f in (scripts\*.bat) do call %f                 :: Windows (cmd)
 
 ## Примеры использования
 
-Тестовый репозиторий с циклами:
+Граф на языке Graphviz и изображение (открывается в программе
+просмотра):
 
 ```
-$ ./run.sh --test-mode --repo examples/repos/cycles.txt --package A
-Dependency graph of A (packages: 6, dependencies: 7):
-  A -> B
-  B -> C, D
-  C -> A
-  D -> E
-  E -> D, F
-  F
-Cycles (2):
-  A -> B -> C -> A
-  D -> E -> D
+$ ./run.sh --test-mode --repo examples/repos/cycle.txt --package A
+digraph dependencies {
+    rankdir=LR;
+    node [shape=box];
+    "A" [style=bold];
+    "B";
+    "C";
+    "D";
+    "A" -> "B";
+    "B" -> "C";
+    "C" -> "A";
+    "C" -> "D";
+}
 ```
 
-Фильтр разрывает цикл:
+ASCII-дерево с фильтром:
 
 ```
-$ ./run.sh -t -r examples/repos/names.txt -p APP -f T
-Dependency graph of APP (packages: 5, dependencies: 6):
-  APP -> WEB, LOG
-  WEB -> CORE, JSON
-  CORE
-  JSON -> CORE
-  LOG -> CORE
-Cycles: none
-Filtered out by 'T' (1):
-  TEST
+$ ./run.sh -t -r examples/repos/names.txt -p APP -f T -a
+APP
++- WEB
+|  +- CORE
+|  \- JSON
+|     \- CORE (*)
+\- LOG
+   \- CORE (*)
 ```
 
-Пакет из репозитория Maven (Maven Central по умолчанию):
+Пакет из Maven Central:
 
 ```
-$ ./run.sh --package junit:junit:4.13.2
-Dependency graph of junit:junit:4.13.2 (packages: 3, dependencies: 3):
-  junit:junit:4.13.2 -> org.hamcrest:hamcrest-core:1.3, org.hamcrest:hamcrest-library:1.3
-  org.hamcrest:hamcrest-core:1.3
-  org.hamcrest:hamcrest-library:1.3 -> org.hamcrest:hamcrest-core:1.3
-Cycles: none
+$ ./run.sh --package junit:junit:4.13.2 --ascii-tree
+junit:junit:4.13.2
++- org.hamcrest:hamcrest-core:1.3
+\- org.hamcrest:hamcrest-library:1.3
+   \- org.hamcrest:hamcrest-core:1.3 (*)
 ```
 
 Неразрешённые пакеты не прерывают построение графа:
 
 ```
-$ ./run.sh --package org.example:missing-dep:1.0 --repo http://127.0.0.1:8765
-Dependency graph of org.example:missing-dep:1.0 (packages: 4, dependencies: 3):
-  org.example:missing-dep:1.0 -> org.example:ghost:1.0, org.example:no-deps:1.0, org.example:ranged:[1.0,2.0)
-  org.example:ghost:1.0 (not resolved)
-  org.example:no-deps:1.0
-  org.example:ranged:[1.0,2.0) (not resolved)
-Cycles: none
-Not resolved (2):
-  org.example:ghost:1.0: package org.example:ghost:1.0 not found in repository (...)
-  org.example:ranged:[1.0,2.0): version '[1.0,2.0)' cannot be resolved
+$ ./run.sh --package org.example:missing-dep:1.0 --repo http://127.0.0.1:8765 -a
+org.example:missing-dep:1.0
++- org.example:ghost:1.0 (not resolved)
++- org.example:no-deps:1.0
+\- org.example:ranged:[1.0,2.0) (not resolved)
 ```
 
 Ошибка в файле тестового репозитория:
