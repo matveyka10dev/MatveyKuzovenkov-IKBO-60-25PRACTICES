@@ -64,9 +64,10 @@ def metadata(versioning):
 class ParsePomTest(unittest.TestCase):
     """Проверка parse_pom."""
 
-    def setUp(self):
-        """Разобрать пример POM с пространством имён."""
-        self.pom = parse_pom(NAMESPACED_POM, SOURCE)
+    @property
+    def pom(self):
+        """Разобранный пример POM с пространством имён."""
+        return parse_pom(NAMESPACED_POM, SOURCE)
 
     def test_inherited_coordinate(self):
         """groupId и version наследуются от parent."""

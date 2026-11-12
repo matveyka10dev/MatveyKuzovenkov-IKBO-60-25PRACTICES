@@ -46,16 +46,22 @@ class ValidatePackageTest(unittest.TestCase):
 class ResolveRepoTest(unittest.TestCase):
     """Проверка resolve_repo."""
 
-    def setUp(self):
-        """Создать временный каталог с файлом тестового репозитория."""
-        self.tmp = tempfile.TemporaryDirectory()
-        self.file = os.path.join(self.tmp.name, "repo.txt")
-        with open(self.file, "w", encoding="utf-8") as file:
-            file.write("A: B\n")
+    @property
+    def tmp(self):
+        """Временный каталог теста, удаляется после теста."""
+        if "_tmp" not in self.__dict__:
+            self._tmp = tempfile.TemporaryDirectory()
+            self.addCleanup(self._tmp.cleanup)
+        return self._tmp
 
-    def tearDown(self):
-        """Удалить временный каталог."""
-        self.tmp.cleanup()
+    @property
+    def file(self):
+        """Файл тестового репозитория во временном каталоге."""
+        path = os.path.join(self.tmp.name, "repo.txt")
+        if not os.path.exists(path):
+            with open(path, "w", encoding="utf-8") as file:
+                file.write("A: B\n")
+        return path
 
     def test_default_url(self):
         """Без --repo используется Maven Central."""

@@ -13,13 +13,13 @@ EXAMPLES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
 class LoadTestRepoTest(unittest.TestCase):
     """Проверка load_test_repo."""
 
-    def setUp(self):
-        """Создать временный каталог."""
-        self.tmp = tempfile.TemporaryDirectory()
-
-    def tearDown(self):
-        """Удалить временный каталог."""
-        self.tmp.cleanup()
+    @property
+    def tmp(self):
+        """Временный каталог теста, удаляется после теста."""
+        if "_tmp" not in self.__dict__:
+            self._tmp = tempfile.TemporaryDirectory()
+            self.addCleanup(self._tmp.cleanup)
+        return self._tmp
 
     def load_text(self, text, encoding="utf-8"):
         """Записать текст во временный файл и загрузить его.

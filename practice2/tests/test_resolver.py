@@ -118,9 +118,10 @@ def describe(resolver, text):
 class ResolverTest(unittest.TestCase):
     """Проверка Resolver на поддельном репозитории."""
 
-    def setUp(self):
-        """Создать Resolver с поддельной загрузкой файлов."""
-        self.resolver = Resolver(REPO, fetch=fake_fetch)
+    @property
+    def resolver(self):
+        """Resolver с поддельной загрузкой файлов (новый для каждого теста)."""
+        return Resolver(REPO, fetch=fake_fetch)
 
     def test_effective_dependencies(self):
         """Наследование, свойства, управление версиями и импорт BOM."""
