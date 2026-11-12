@@ -175,13 +175,33 @@ class LoadVfsTest(unittest.TestCase):
 class VfsInfoCommandTest(unittest.TestCase):
     """Проверка служебной команды vfs-info."""
 
-    def setUp(self):
-        """Подготовить эмулятор с небольшой VFS."""
-        vfs = Vfs(source="test.csv")
-        vfs.make_file("/home/user/a.txt", b"12345")
-        self.out = io.StringIO()
-        self.err = io.StringIO()
-        self.shell = Shell(out=self.out, err=self.err, vfs=vfs)
+    def prepared(self):
+        """Подготовить эмулятор с небольшой VFS (один раз на тест).
+
+        :return: кортеж (эмулятор, поток вывода, поток ошибок).
+        """
+        if "_shell" not in self.__dict__:
+            vfs = Vfs(source="test.csv")
+            vfs.make_file("/home/user/a.txt", b"12345")
+            self._out = io.StringIO()
+            self._err = io.StringIO()
+            self._shell = Shell(out=self._out, err=self._err, vfs=vfs)
+        return self._shell, self._out, self._err
+
+    @property
+    def shell(self):
+        """Эмулятор с небольшой VFS."""
+        return self.prepared()[0]
+
+    @property
+    def out(self):
+        """Поток вывода эмулятора."""
+        return self.prepared()[1]
+
+    @property
+    def err(self):
+        """Поток ошибок эмулятора."""
+        return self.prepared()[2]
 
     def test_summary(self):
         """Без аргумента выводится сводка о VFS."""
