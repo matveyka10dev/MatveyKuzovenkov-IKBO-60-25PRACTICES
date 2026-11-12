@@ -61,14 +61,14 @@ Makefile            цели run и test
 
 ### Параметры командной строки
 
-| Опция                    | Параметр                                         | По умолчанию   |
-|--------------------------|--------------------------------------------------|----------------|
-| `--package`, `-p NAME`   | имя анализируемого пакета (обязательный)         | -              |
+| Опция | Параметр | По умолчанию |
+|---|---|---|
+| `--package`, `-p NAME` | имя анализируемого пакета (обязательный) | - |
 | `--repo`, `-r URL\|PATH` | URL репозитория или путь к файлу тестового репозитория | Maven Central |
-| `--test-mode`, `-t`      | режим работы с тестовым репозиторием             | выключен       |
-| `--ascii-tree`, `-a`     | режим вывода зависимостей в формате ASCII-дерева | выключен       |
-| `--filter`, `-f SUBSTRING` | подстрока для фильтрации пакетов               | не задана      |
-| `-h`, `--help`           | справка по опциям                                | -              |
+| `--test-mode`, `-t` | режим работы с тестовым репозиторием | выключен |
+| `--ascii-tree`, `-a` | режим вывода зависимостей в формате ASCII-дерева | выключен |
+| `--filter`, `-f SUBSTRING` | подстрока для фильтрации пакетов | не задана |
+| `-h`, `--help` | справка по опциям | - |
 
 Опции можно задавать в любом порядке, значение указывается через
 пробел или `=` (`--package=A`), короткие флаги можно писать слитно
@@ -326,34 +326,34 @@ E:
 Синтаксические ошибки обрабатывает `argparse` (перед сообщением
 выводится строка `usage`):
 
-| Ситуация                      | Сообщение                                                 |
-|-------------------------------|-----------------------------------------------------------|
-| не задан `--package`          | `the following arguments are required: --package/-p`      |
-| опция без значения            | `argument --repo/-r: expected one argument`               |
-| опция задана дважды           | `argument --filter: specified more than once`             |
-| флаг со значением             | `argument --test-mode/-t: ignored explicit argument 'yes'` |
-| неизвестная опция, лишний аргумент | `unrecognized arguments: --unknown`                  |
+| Ситуация | Сообщение |
+|---|---|
+| не задан `--package` | `the following arguments are required: --package/-p` |
+| опция без значения | `argument --repo/-r: expected one argument` |
+| опция задана дважды | `argument --filter: specified more than once` |
+| флаг со значением | `argument --test-mode/-t: ignored explicit argument 'yes'` |
+| неизвестная опция, лишний аргумент | `unrecognized arguments: --unknown` |
 
 Ошибки в значениях (`depviz: error: <опция>: <сообщение>`):
 
-| Опция         | Ситуация                                  | Сообщение                                                   |
-|---------------|-------------------------------------------|-------------------------------------------------------------|
-| `--package`   | пустое имя                                | `package name must not be empty`                            |
-| `--package`   | не координаты Maven                       | `'junit' is not a Maven coordinate groupId:artifactId[:version]` |
-| `--package`   | в тестовом режиме не заглавные буквы      | `'a': in test mode package name must consist of capital Latin letters` |
-| `--repo`      | пустое значение                           | `value must not be empty`                                   |
-| `--repo`      | схема не http/https                       | `'ftp://...' is not an HTTP(S) URL`                         |
-| `--repo`      | файл без `--test-mode`                    | `'...' is not an HTTP(S) URL (use --test-mode for a test repository file)` |
-| `--repo`      | URL без имени сервера                     | `'https:///maven2': URL has no host`                        |
-| `--repo`      | пробел в URL                              | `'...': URL must not contain whitespace`                    |
-| `--repo`      | тестовый режим без `--repo`               | `test mode requires a path to the test repository file`     |
-| `--repo`      | URL в тестовом режиме                     | `'https://...': test mode requires a file path, not a URL`  |
-| `--repo`      | файл не существует                        | `no/such/file.txt: No such file or directory`               |
-| `--repo`      | каталог вместо файла                      | `examples/repos: Is a directory`                            |
-| `--repo`      | нет прав на чтение                        | `...: Permission denied`                                    |
-| `--filter`    | пустая подстрока                          | `substring must not be empty`                               |
-| `--filter`    | пробелы в подстроке                       | `'ham crest': substring must not contain whitespace`        |
-| `--filter`    | подстрока входит в имя пакета             | `'junit' excludes the analyzed package 'org.junit:junit' itself` |
+| Опция | Ситуация | Сообщение |
+|---|---|---|
+| `--package` | пустое имя | `package name must not be empty` |
+| `--package` | не координаты Maven | `'junit' is not a Maven coordinate groupId:artifactId[:version]` |
+| `--package` | не заглавные буквы (тест) | `'a': in test mode package name must consist of capital Latin letters` |
+| `--repo` | пустое значение | `value must not be empty` |
+| `--repo` | схема не http/https | `'ftp://...' is not an HTTP(S) URL` |
+| `--repo` | файл без `--test-mode` | `'...' is not an HTTP(S) URL (use --test-mode for a test repository file)` |
+| `--repo` | URL без имени сервера | `'https:///maven2': URL has no host` |
+| `--repo` | пробел в URL | `'...': URL must not contain whitespace` |
+| `--repo` | тестовый режим без `--repo` | `test mode requires a path to the test repository file` |
+| `--repo` | URL в тестовом режиме | `'https://...': test mode requires a file path, not a URL` |
+| `--repo` | файл не существует | `no/such/file.txt: No such file or directory` |
+| `--repo` | каталог вместо файла | `examples/repos: Is a directory` |
+| `--repo` | нет прав на чтение | `...: Permission denied` |
+| `--filter` | пустая подстрока | `substring must not be empty` |
+| `--filter` | пробелы в подстроке | `'ham crest': substring must not contain whitespace` |
+| `--filter` | подстрока входит в имя пакета | `'junit' excludes the analyzed package 'org.junit:junit' itself` |
 
 Ошибки флагов `--test-mode` и `--ascii-tree` - значение и повтор
 флага - перечислены в таблице синтаксических ошибок. Кроме того,
@@ -362,38 +362,38 @@ E:
 
 Ошибки получения зависимостей (код 1):
 
-| Ситуация                         | Сообщение                                                 |
-|----------------------------------|-----------------------------------------------------------|
-| нет POM пакета (HTTP 404)        | `package g:a:1.0 not found in repository (<url>: HTTP 404 Not Found)` |
-| нет maven-metadata.xml           | `package g:a not found in repository (...)`               |
-| в метаданных нет версий          | `<url>: no versions found`                                |
-| некорректный XML                 | `<url>: invalid XML: mismatched tag: line 7, column 2`    |
-| файл не является POM             | `<url>: root element is <html>, expected <project>`       |
-| нет родительского POM            | `cannot load parent of g:a:1.0: package ... not found ...` |
-| циклическая цепочка родителей    | `cyclic parent reference: g:a:1.0 -> g:b:1.0 -> g:a:1.0`  |
-| сервер недоступен                | `<url>: cannot connect: [Errno 111] Connection refused`   |
-| неизвестный сервер               | `<url>: cannot connect: [Errno -2] Name or service not known` |
-| другой ответ HTTP                | `<url>: HTTP 500 Internal Server Error`                   |
+| Ситуация | Сообщение |
+|---|---|
+| нет POM пакета (HTTP 404) | `package g:a:1.0 not found in repository (<url>: HTTP 404 Not Found)` |
+| нет maven-metadata.xml | `package g:a not found in repository (...)` |
+| в метаданных нет версий | `<url>: no versions found` |
+| некорректный XML | `<url>: invalid XML: mismatched tag: line 7, column 2` |
+| файл не является POM | `<url>: root element is <html>, expected <project>` |
+| нет родительского POM | `cannot load parent of g:a:1.0: package ... not found ...` |
+| циклическая цепочка родителей | `cyclic parent reference: g:a:1.0 -> g:b:1.0 -> g:a:1.0` |
+| сервер недоступен | `<url>: cannot connect: [Errno 111] Connection refused` |
+| неизвестный сервер | `<url>: cannot connect: [Errno -2] Name or service not known` |
+| другой ответ HTTP | `<url>: HTTP 500 Internal Server Error` |
 
 Ошибки тестового репозитория (код 1):
 
-| Ситуация                         | Сообщение                                                 |
-|----------------------------------|-----------------------------------------------------------|
-| строка без двоеточия             | `f.txt:2: expected 'PACKAGE: DEPENDENCIES', got 'B C'`    |
-| имя не из заглавных букв         | `f.txt:2: invalid package name 'c': expected capital Latin letters` |
-| пакет описан дважды              | `f.txt:3: duplicate package 'A'`                          |
-| повтор в списке зависимостей     | `f.txt:1: duplicate dependency 'B' of A`                  |
-| файл не в UTF-8                  | `'f.txt' is not a UTF-8 text file`                        |
-| анализируемого пакета нет        | `package Q not found in test repository`                  |
+| Ситуация | Сообщение |
+|---|---|
+| строка без двоеточия | `f.txt:2: expected 'PACKAGE: DEPENDENCIES', got 'B C'` |
+| имя не из заглавных букв | `f.txt:2: invalid package name 'c': expected capital Latin letters` |
+| пакет описан дважды | `f.txt:3: duplicate package 'A'` |
+| повтор в списке зависимостей | `f.txt:1: duplicate dependency 'B' of A` |
+| файл не в UTF-8 | `'f.txt' is not a UTF-8 text file` |
+| анализируемого пакета нет | `package Q not found in test repository` |
 
 Ошибки показа изображения (код 1, текст графа к этому моменту уже
 выведен):
 
-| Ситуация                         | Сообщение                                                 |
-|----------------------------------|-----------------------------------------------------------|
-| Graphviz не установлен           | `Graphviz is not installed: 'dot' not found in PATH`      |
-| ошибка программы dot             | `dot failed: <сообщение dot>`                             |
-| не открылась программа просмотра | `cannot open image <файл>: <причина>`                     |
+| Ситуация | Сообщение |
+|---|---|
+| Graphviz не установлен | `Graphviz is not installed: 'dot' not found in PATH` |
+| ошибка программы dot | `dot failed: <сообщение dot>` |
+| не открылась программа просмотра | `cannot open image <файл>: <причина>` |
 
 ## Сборка и запуск
 
@@ -421,38 +421,38 @@ make test                                         # через make
 запуска, весь вывод и код завершения. Для каждого скрипта есть версия
 для Windows (`.bat`) и для Linux / macOS (`.sh`).
 
-| Скрипт                        | Что проверяет                                   |
-|-------------------------------|-------------------------------------------------|
-| `scripts/test_valid_params`   | корректные параметры: все опции, короткие формы, `=`, любой порядок |
-| `scripts/test_package_errors` | ошибки `--package`                              |
-| `scripts/test_repo_errors`    | ошибки `--repo` в обоих режимах                 |
-| `scripts/test_mode_errors`    | ошибки флагов `--test-mode` и `--ascii-tree`    |
-| `scripts/test_filter_errors`  | ошибки `--filter`                               |
-| `scripts/test_bad_usage`      | справка, запуск без опций, неизвестные опции    |
+| Скрипт | Что проверяет |
+|---|---|
+| `scripts/test_valid_params` | корректные параметры: все опции, короткие формы, `=`, любой порядок |
+| `scripts/test_package_errors` | ошибки `--package` |
+| `scripts/test_repo_errors` | ошибки `--repo` в обоих режимах |
+| `scripts/test_mode_errors` | ошибки флагов `--test-mode` и `--ascii-tree` |
+| `scripts/test_filter_errors` | ошибки `--filter` |
+| `scripts/test_bad_usage` | справка, запуск без опций, неизвестные опции |
 
 Получение зависимостей из репозитория Maven (этап 2; начиная с
 этапа 3 выводится граф):
 
-| Скрипт                        | Что проверяет                                   |
-|-------------------------------|-------------------------------------------------|
-| `scripts/test_deps_local`     | пакеты из `examples/maven-repo` (без интернета): версия из метаданных, родитель, свойства, BOM, scope, optional |
-| `scripts/test_deps_errors`    | ошибки: нет пакета, нет версий, неверный XML, не POM, нет родителя, цикл родителей, недоступный сервер |
-| `scripts/test_deps_central`   | реальные пакеты из Maven Central (нужен интернет) |
+| Скрипт | Что проверяет |
+|---|---|
+| `scripts/test_deps_local` | `examples/maven-repo` без интернета: версия, родитель, свойства, BOM, scope |
+| `scripts/test_deps_errors` | нет пакета или версий, неверный XML, не POM, нет родителя, цикл, нет сервера |
+| `scripts/test_deps_central` | реальные пакеты из Maven Central (нужен интернет) |
 
 Граф зависимостей (этап 3):
 
-| Скрипт                        | Что проверяет                                   |
-|-------------------------------|-------------------------------------------------|
-| `scripts/test_graph_test_repo` | тестовые репозитории: ромб, цикл, цикл из одного пакета, несколько циклов, глубина 26, имена из нескольких букв, отсутствующие пакеты, нет корня |
-| `scripts/test_graph_filter`   | фильтрация: удаление поддерева, разрыв цикла, несколько пакетов |
-| `scripts/test_graph_broken`   | некорректные файлы тестового репозитория        |
-| `scripts/test_graph_maven`    | граф из `examples/maven-repo`: транзитивные зависимости, scope, цикл, фильтр, неразрешённые пакеты |
+| Скрипт | Что проверяет |
+|---|---|
+| `scripts/test_graph_test_repo` | тестовые репозитории: ромб, циклы, глубина 26, нет пакетов, нет корня |
+| `scripts/test_graph_filter` | фильтрация: удаление поддерева, разрыв цикла, несколько пакетов |
+| `scripts/test_graph_broken` | некорректные файлы тестового репозитория |
+| `scripts/test_graph_maven` | граф из `examples/maven-repo`: транзитивность, scope, цикл, фильтр |
 
 Визуализация (этап 5):
 
-| Скрипт                        | Что проверяет                                   |
-|-------------------------------|-------------------------------------------------|
-| `scripts/test_visualize`      | три пакета: текст на языке Graphviz и изображение, затем ASCII-деревья |
+| Скрипт | Что проверяет |
+|---|---|
+| `scripts/test_visualize` | три пакета: текст на языке Graphviz и изображение, затем ASCII-деревья |
 
 Начиная с этапа 5 каждый успешный запуск открывает изображение графа,
 поэтому скрипты открывают по одному окну просмотра на запуск.
@@ -497,20 +497,20 @@ for %f in (scripts\*.bat) do call %f                 :: Windows (cmd)
 копии настоящих (оставлены только элементы, влияющие на зависимости),
 пакеты `org.example:*` придуманы для демонстрации:
 
-| Пакет                                | Что демонстрирует                                  |
-|--------------------------------------|----------------------------------------------------|
-| `junit:junit` (4.13.2)               | свойство в версии, `scope=test`, версия из метаданных |
-| `org.hamcrest:hamcrest-library:1.3`  | родительский POM, `${project.version}`             |
-| `org.example:demo-app` (1.0.0, 1.1.0) | версия из метаданных, родитель `demo-parent`, переопределение свойства, управление версиями, импорт BOM `demo-bom`, `provided`, `optional`, унаследованная зависимость, игнорирование зависимостей плагина |
-| `org.example:no-deps:1.0`            | пакет без зависимостей, POM без пространства имён  |
-| `org.example:broken-xml:1.0`         | некорректный XML                                   |
-| `org.example:not-a-pom:1.0`          | файл не является POM                               |
-| `org.example:orphan:1.0`             | отсутствующий родительский POM                     |
-| `org.example:cycle-a:1.0`            | циклическая цепочка родителей                      |
-| `org.example:no-versions`            | метаданные без версий                              |
-| `org.example:demo-core:1.1.0`        | `optional`, `test` и `provided` не транзитивны, `runtime` транзитивна |
-| `org.example:cycle-x:1.0`            | цикл зависимостей cycle-x -> cycle-y -> cycle-z -> cycle-x |
-| `org.example:missing-dep:1.0`        | транзитивные зависимости без POM и с диапазоном версий |
+| Пакет | Что демонстрирует |
+|---|---|
+| `junit:junit` (4.13.2) | свойство в версии, `scope=test`, версия из метаданных |
+| `org.hamcrest:hamcrest-library:1.3` | родительский POM, `${project.version}` |
+| `org.example:demo-app` (1.0.0, 1.1.0) | версия из метаданных, родитель, свойства, управление версиями, BOM, scope |
+| `org.example:no-deps:1.0` | пакет без зависимостей, POM без пространства имён |
+| `org.example:broken-xml:1.0` | некорректный XML |
+| `org.example:not-a-pom:1.0` | файл не является POM |
+| `org.example:orphan:1.0` | отсутствующий родительский POM |
+| `org.example:cycle-a:1.0` | циклическая цепочка родителей |
+| `org.example:no-versions` | метаданные без версий |
+| `org.example:demo-core:1.1.0` | `optional`, `test` и `provided` не транзитивны, `runtime` транзитивна |
+| `org.example:cycle-x:1.0` | цикл зависимостей cycle-x -> cycle-y -> cycle-z -> cycle-x |
+| `org.example:missing-dep:1.0` | транзитивные зависимости без POM и с диапазоном версий |
 
 Для полноты графа `demo-app` в репозитории есть упрощённые POM
 транзитивных зависимостей (`slf4j-api`, `guava` и её зависимости,
@@ -519,16 +519,16 @@ for %f in (scripts\*.bat) do call %f                 :: Windows (cmd)
 
 Тестовые репозитории в `examples/repos/`:
 
-| Файл              | Граф                                                  |
-|-------------------|-------------------------------------------------------|
-| `simple.txt`      | без циклов, общая зависимость D (ромб)                |
-| `cycle.txt`       | цикл A -> B -> C -> A                                 |
-| `self_cycle.txt`  | пакет зависит сам от себя                             |
-| `cycles.txt`      | два цикла, второй достижим из первого                 |
-| `deep.txt`        | цепочка из 26 уровней A -> ... -> Z                   |
-| `names.txt`       | имена из нескольких букв, цикл APP -> TEST -> APP     |
-| `missing.txt`     | зависимости, не описанные в репозитории               |
-| `broken/*.txt`    | ошибки формата: имя, двоеточие, повторы, пустой файл, не UTF-8 |
+| Файл | Граф |
+|---|---|
+| `simple.txt` | без циклов, общая зависимость D (ромб) |
+| `cycle.txt` | цикл A -> B -> C -> A |
+| `self_cycle.txt` | пакет зависит сам от себя |
+| `cycles.txt` | два цикла, второй достижим из первого |
+| `deep.txt` | цепочка из 26 уровней A -> ... -> Z |
+| `names.txt` | имена из нескольких букв, цикл APP -> TEST -> APP |
+| `missing.txt` | зависимости, не описанные в репозитории |
+| `broken/*.txt` | ошибки формата: имя, двоеточие, повторы, пустой файл, не UTF-8 |
 
 ## Примеры использования
 

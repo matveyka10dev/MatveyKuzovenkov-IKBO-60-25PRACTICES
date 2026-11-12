@@ -5,7 +5,7 @@
 поэтому файлы с ним и без него разбираются одинаково.
 """
 
-import xml.etree.ElementTree as ElementTree
+from xml.etree.ElementTree import ParseError, fromstring
 
 from depviz.maven import TYPE_JAR, Coordinate, Dependency
 
@@ -46,8 +46,8 @@ def parse_xml(data, source):
     :raises PomError: если файл не является корректным XML.
     """
     try:
-        root = ElementTree.fromstring(data)
-    except ElementTree.ParseError as exc:
+        root = fromstring(data)
+    except ParseError as exc:
         raise PomError("{}: invalid XML: {}".format(source, exc)) from None
     for element in root.iter():
         if isinstance(element.tag, str) and NAMESPACE_END in element.tag:
